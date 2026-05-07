@@ -3,6 +3,7 @@
 #include <bitset>
 #include <vector>
 #include <algorithm>
+#include <cctype>
 using namespace std;
 
 // Helper function: Covert decimal to 4-bit binary string
