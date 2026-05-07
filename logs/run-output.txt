@@ -1,0 +1,13 @@
+Build and example run output for FIT4012 Lab 4
+
+1) Build command:
+   g++ -std=c++17 -Wall -Wextra -pedantic des.cpp -o des
+
+2) Example DES encrypt/decrypt run:
+   echo "1 0x133457799BBCDFF1 0x0123456789ABCDEF" | ./des
+   (expected output: Ciphertext or Result as specified)
+
+3) Example TripleDES run:
+   echo "3 0x0123456789ABCDEF 0x133457799BBCDFF1 0x1122334455667788" | ./des
+
+This file is provided as a submission evidence log for the required logs/ directory.
