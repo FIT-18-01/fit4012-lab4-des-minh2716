@@ -315,6 +315,84 @@ string unpad_binary(const string& binary) {
 }
 
 int main(int argc, char* argv[]) {
+    if (argc == 1) {
+        int mode;
+        if (!(cin >> mode)) {
+            cerr << "Invalid mode input" << endl;
+            return 1;
+        }
+
+        if (mode == 1) {
+            string plaintext, key;
+            cin >> plaintext >> key;
+            if (!is_binary_string(plaintext) || !is_binary_string(key) || key.size() != 64) {
+                cerr << "Invalid DES encrypt input" << endl;
+                return 1;
+            }
+
+            vector<string> blocks = split_into_blocks_with_zero_padding(plaintext);
+            string ciphertext;
+            for (const auto& block : blocks) ciphertext += des_encrypt_block(block, key);
+            cout << "Ciphertext: " << ciphertext << '\n';
+            return 0;
+        }
+
+        if (mode == 2) {
+            string ciphertext, key;
+            cin >> ciphertext >> key;
+            if (!is_binary_string(ciphertext) || !is_binary_string(key) || key.size() != 64 || ciphertext.size() % 64 != 0) {
+                cerr << "Invalid DES decrypt input" << endl;
+                return 1;
+            }
+
+            string plaintext;
+            for (size_t i = 0; i < ciphertext.size(); i += 64) {
+                plaintext += des_decrypt_block(ciphertext.substr(i, 64), key);
+            }
+            cout << "Plaintext: " << plaintext << '\n';
+            return 0;
+        }
+
+        if (mode == 3) {
+            string plaintext64, k1, k2, k3;
+            cin >> plaintext64 >> k1 >> k2 >> k3;
+            if (!is_binary_string(plaintext64) || plaintext64.size() != 64 ||
+                !is_binary_string(k1) || k1.size() != 64 ||
+                !is_binary_string(k2) || k2.size() != 64 ||
+                !is_binary_string(k3) || k3.size() != 64) {
+                cerr << "Invalid TripleDES encrypt input" << endl;
+                return 1;
+            }
+
+            string c1 = des_encrypt_block(plaintext64, k1);
+            string c2 = des_decrypt_block(c1, k2);
+            string c3 = des_encrypt_block(c2, k3);
+            cout << "TripleDES Ciphertext: " << c3 << '\n';
+            return 0;
+        }
+
+        if (mode == 4) {
+            string ciphertext64, k1, k2, k3;
+            cin >> ciphertext64 >> k1 >> k2 >> k3;
+            if (!is_binary_string(ciphertext64) || ciphertext64.size() != 64 ||
+                !is_binary_string(k1) || k1.size() != 64 ||
+                !is_binary_string(k2) || k2.size() != 64 ||
+                !is_binary_string(k3) || k3.size() != 64) {
+                cerr << "Invalid TripleDES decrypt input" << endl;
+                return 1;
+            }
+
+            string p1 = des_decrypt_block(ciphertext64, k3);
+            string p2 = des_encrypt_block(p1, k2);
+            string p3 = des_decrypt_block(p2, k1);
+            cout << "TripleDES Plaintext: " << p3 << '\n';
+            return 0;
+        }
+
+        cerr << "Mode must be 1, 2, 3 or 4" << endl;
+        return 1;
+    }
+
     if (argc < 5) {
         cout << "Usage: " << argv[0] << " <mode> <operation> <key> [key2] [key3] <plaintext>" << endl;
         cout << "Modes: des, tripledes" << endl;
@@ -380,7 +458,7 @@ int main(int argc, char* argv[]) {
         blocks.push_back(plaintext_bin.substr(i, 64));
     }
 
-    string result_bin = "";
+    string result_bin;
 
     if (mode == "des") {
         for (const string& block : blocks) {
@@ -393,7 +471,6 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
-
     } else if (mode == "tripledes") {
         for (const string& block : blocks) {
             if (operation == "encrypt") {
@@ -413,11 +490,9 @@ int main(int argc, char* argv[]) {
 
     // Output
     if (plaintext_str.substr(0, 2) == "0x" || (plaintext_str.find_first_not_of("01") == string::npos && plaintext_str.size() == 64)) {
-        // Input was hex or binary, output hex
         string result_hex = binary_to_hex(result_bin);
         cout << "Result (hex): 0x" << result_hex << endl;
     } else {
-        // Input was string, output string
         string result_str = binary_to_string(result_bin);
         if (operation == "decrypt") {
             result_bin = unpad_binary(result_bin);
