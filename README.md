@@ -57,33 +57,36 @@ cmake --build build
 
 ## 3. Input / Đầu vào
 
-TODO_STUDENT: Mô tả rõ đầu vào của chương trình sau khi em hoàn thiện bài lab.
+Chương trình nhận các tham số dòng lệnh:
+- mode: "des" hoặc "tripledes"
+- operation: "encrypt" hoặc "decrypt"
+- key(s): khóa hex (0x...) hoặc binary 64-bit
+- plaintext: văn bản cần mã hóa (string), hoặc hex (0x...), hoặc binary
 
-Gợi ý nên nêu:
-- plaintext đang được nhập như thế nào
-- key đang được nhập như thế nào
-- chương trình nhận 1 block hay nhiều block
-- định dạng dữ liệu là chuỗi bit, chuỗi ký tự hay file
+Ví dụ:
+./des des encrypt 0x133457799BBCDFF1 "Hello World"
+./des tripledes encrypt 0xkey1 0xkey2 0xkey3 0xplaintext
+
+Chương trình xử lý nhiều block bằng cách chia thành các block 64-bit và pad bằng zero nếu cần.
 
 ## 4. Output / Đầu ra
 
-TODO_STUDENT: Mô tả rõ đầu ra của chương trình.
+- Với input là string: output là string đã mã hóa/giải mã
+- Với input là hex/binary: output là hex
 
-Gợi ý nên nêu:
-- ciphertext hiển thị ra sao
-- có in round keys hay không
-- có hỗ trợ giải mã hay không
-- với TripleDES thì đầu ra gồm những gì
+In ra round keys trong quá trình tạo khóa cho DES.
+
+Hỗ trợ giải mã cho cả DES và TripleDES.
+
+Với TripleDES, output gồm ciphertext sau 3 bước mã hóa.
 
 ## 5. Padding đang dùng
 
-TODO_STUDENT: Giải thích cơ chế padding em dùng.
+Sử dụng zero padding: thêm bit '0' vào cuối cho đủ bội số của 64 bit.
 
-Gợi ý:
-- nếu plaintext dài hơn 64 bit thì chia block như thế nào
-- nếu thiếu bit thì pad bằng `0` ra sao
-- hạn chế của zero padding là gì
-- vì sao cách này chỉ phù hợp cho bài học nhập môn, không phải thiết kế an toàn hoàn chỉnh trong thực tế
+Ví dụ: plaintext 72 bit -> pad thêm 56 bit '0' thành 128 bit.
+
+Hạn chế: không an toàn trong thực tế vì không phân biệt padding và dữ liệu kết thúc bằng '0'. Chỉ phù hợp cho bài học nhập môn.
 
 ## 6. Tests bắt buộc
 

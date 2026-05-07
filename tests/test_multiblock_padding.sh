@@ -1,7 +1,32 @@
 #!/usr/bin/env bash
-# TODO_STUDENT: Hoàn thiện test cho trường hợp multi-block và padding.
-# Gợi ý: kiểm tra plaintext dài hơn 64 bit, chia block đúng và zero padding đúng.
+#!/usr/bin/env bash
+# Test multi-block and padding
 set -euo pipefail
 
-echo "TODO_STUDENT: implement multi-block padding test"
-exit 0
+echo "Testing multi-block padding..."
+
+PLAINTEXT="This is a longer message that will require multiple blocks for encryption."
+KEY="0x133457799BBCDFF1"
+
+# Build if needed
+if [ ! -f ../des ]; then
+    echo "Building des..."
+    g++ -std=c++17 ../des.cpp -o ../des
+fi
+
+# Encrypt
+ENCRYPT_OUTPUT=$(../des des encrypt $KEY "$PLAINTEXT")
+CIPHERTEXT=$(echo "$ENCRYPT_OUTPUT" | grep "Result:" | cut -d' ' -f2-)
+
+# Decrypt
+DECRYPT_OUTPUT=$(../des des decrypt $KEY "$CIPHERTEXT")
+DECRYPTED=$(echo "$DECRYPT_OUTPUT" | grep "Result:" | cut -d' ' -f2-)
+
+if [ "$DECRYPTED" = "$PLAINTEXT" ]; then
+    echo "Multi-block padding test PASSED"
+else
+    echo "Multi-block padding test FAILED"
+    echo "Original: $PLAINTEXT"
+    echo "Decrypted: $DECRYPTED"
+    exit 1
+fi

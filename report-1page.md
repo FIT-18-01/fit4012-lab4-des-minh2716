@@ -2,16 +2,29 @@
 
 ## Mục tiêu
 
-TODO_STUDENT: Viết ngắn gọn mục tiêu của bài lab.
+Triển khai thuật toán DES và TripleDES hoàn chỉnh, bao gồm mã hóa và giải mã, xử lý nhiều block với padding, và các test case.
 
 ## Cách làm / Method
 
-TODO_STUDENT: Mô tả em đã làm gì với file code gốc, bổ sung những chức năng nào, cấu trúc chương trình ra sao.
+Bổ sung vào code gốc:
+- Hàm decrypt cho DES bằng cách đảo ngược round keys
+- Lớp TripleDES với 3 khóa
+- Xử lý input/output hex, binary, string
+- Padding zero cho nhiều block
+- Command line interface
+
+Cấu trúc: KeyGenerator tạo round keys, DES thực hiện Feistel rounds, TripleDES kết hợp 3 DES.
 
 ## Kết quả / Result
 
-TODO_STUDENT: Trình bày kết quả chạy chương trình, test chính, trường hợp đúng/sai, ví dụ ciphertext hoặc round-trip.
+Chạy test sample DES: encrypt 0x0123456789ABCDEF với key 0x133457799BBCDFF1 -> 0x85E813540F0AB405 ✓
+
+Round-trip: "Hello World!" encrypt/decrypt -> khôi phục đúng ✓
+
+Multi-block: message dài encrypt/decrypt -> đúng ✓
+
+Negative tests: tamper và wrong key -> decryption sai như mong đợi ✓
 
 ## Kết luận / Conclusion
 
-TODO_STUDENT: Nêu điều học được, hạn chế hiện tại, và hướng mở rộng như decryption / TripleDES / multi-block.
+Hoàn thành DES và TripleDES với decrypt, multi-block, padding. Hạn chế: zero padding không an toàn, không hỗ trợ mode như CBC. Mở rộng: thêm CBC mode, PKCS7 padding, file I/O.

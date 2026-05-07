@@ -2,6 +2,7 @@
 #include <string>
 #include <bitset>
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 // Helper function: Covert decimal to 4-bit binary string
@@ -14,13 +15,43 @@ int convert_binary_to_decimal(const string& binary) {
     return stoi(binary, nullptr, 2);
 }
 
-// Helper function: XOR two binary strings
-string Xor(const string& a, const string& b) {
-    string result = "";
-    for (size_t i = 0; i < b.size(); i++) {
-        result += (a[i] != b[i]) ? '1': '0';
+// Helper function: Convert hex string to binary
+string hex_to_binary(const string& hex) {
+    string binary = "";
+    for (char c : hex) {
+        int val = isdigit(c) ? c - '0' : 10 + (tolower(c) - 'a');
+        binary += bitset<4>(val).to_string();
     }
-    return result;
+    return binary;
+}
+
+// Helper function: Convert binary to hex
+string binary_to_hex(const string& binary) {
+    string hex = "";
+    for (size_t i = 0; i < binary.size(); i += 4) {
+        string nibble = binary.substr(i, 4);
+        int val = bitset<4>(nibble).to_ulong();
+        hex += (val < 10) ? ('0' + val) : ('A' + val - 10);
+    }
+    return hex;
+}
+
+// Helper function: Pad binary string to multiple of 64 bits with zeros
+string pad_binary(const string& binary) {
+    size_t len = binary.size();
+    size_t remainder = len % 64;
+    if (remainder == 0) return binary;
+    size_t padding_needed = 64 - remainder;
+    return binary + string(padding_needed, '0');
+}
+
+// Helper function: Remove zero padding
+string unpad_binary(const string& binary) {
+    // For simplicity, assume padding is zeros and remove trailing zeros
+    // In practice, this is insecure, but for educational purposes
+    size_t last_one = binary.find_last_of('1');
+    if (last_one == string::npos) return "";
+    return binary.substr(0, last_one + 1);
 }
 
 // Initial Permutation (IP)
@@ -276,30 +307,173 @@ class DES {
     
             return ciphertext;
         }
+
+        string decrypt(const string& input) {
+            // For decryption, use round keys in reverse order
+            vector<string> reversed_keys = round_keys;
+            reverse(reversed_keys.begin(), reversed_keys.end());
+            
+            // Temporarily set round_keys to reversed
+            vector<string> original_keys = round_keys;
+            round_keys = reversed_keys;
+            
+            string plaintext = encrypt(input); // Reuse encrypt logic
+            
+            // Restore original keys
+            round_keys = original_keys;
+            
+            return plaintext;
 };
-    
-// Main function
-int main() {
-    // Example plaintext (64 bits)
-    string plaintext = "0001001000110100010101100111100010011010101111001101111011110001";
-    
-    // Example key (64 bits)
-    string key = "0001001100110100010101110111100110011011101111001101111111110001";
-    
-    // Generate round keys
-    KeyGenerator keygen(key);
-    keygen.generateRoundKeys(); 
-    
-    vector<string> roundKeys = keygen.getRoundKeys();
-    
-    // Create DES object
-    DES des(roundKeys);
-    
-    // Encrypt
-    string ciphertext = des.encrypt(plaintext);
-    
-    cout << "Ciphertext: " << ciphertext << endl;
-    
+
+// Class for TripleDES
+class TripleDES {
+private:
+    DES des1, des2, des3;
+
+public:
+    TripleDES(const vector<string>& keys1, const vector<string>& keys2, const vector<string>& keys3)
+        : des1(keys1), des2(keys2), des3(keys3) {}
+
+    string encrypt(const string& input) {
+        string temp = des1.encrypt(input);
+        temp = des2.decrypt(temp);  // Note: TripleDES uses decrypt for middle step
+        return des3.encrypt(temp);
+    }
+
+    string decrypt(const string& input) {
+        string temp = des3.decrypt(input);
+        temp = des2.encrypt(temp);  // Reverse for decrypt
+        return des1.decrypt(temp);
+    }
+};
+};
+int main(int argc, char* argv[]) {
+    if (argc < 5) {
+        cout << "Usage: " << argv[0] << " <mode> <operation> <key> [key2] [key3] <plaintext>" << endl;
+        cout << "Modes: des, tripledes" << endl;
+        cout << "Operations: encrypt, decrypt" << endl;
+        cout << "Keys: hex (0x...) or 64-bit binary" << endl;
+        cout << "Plaintext: hex (0x...), binary (64-bit multiple), or string" << endl;
+        return 1;
+    }
+
+    string mode = argv[1];
+    string operation = argv[2];
+
+    vector<string> keys;
+    string plaintext_str;
+
+    if (mode == "des") {
+        if (argc != 5) {
+            cout << "DES mode requires: mode operation key plaintext" << endl;
+            return 1;
+        }
+        keys.push_back(argv[3]);
+        plaintext_str = argv[4];
+    } else if (mode == "tripledes") {
+        if (argc != 7) {
+            cout << "TripleDES mode requires: mode operation key1 key2 key3 plaintext" << endl;
+            return 1;
+        }
+        keys.push_back(argv[3]);
+        keys.push_back(argv[4]);
+        keys.push_back(argv[5]);
+        plaintext_str = argv[6];
+    } else {
+        cout << "Error: invalid mode" << endl;
+        return 1;
+    }
+
+    // Process keys
+    for (string& key : keys) {
+        if (key.substr(0, 2) == "0x") {
+            key = hex_to_binary(key.substr(2));
+        }
+        if (key.size() != 64) {
+            cout << "Error: all keys must be 64 bits" << endl;
+            return 1;
+        }
+    }
+
+    // Process plaintext
+    string plaintext_bin;
+    if (plaintext_str.substr(0, 2) == "0x") {
+        plaintext_bin = hex_to_binary(plaintext_str.substr(2));
+    } else if (plaintext_str.find_first_not_of("01") == string::npos && (plaintext_str.size() % 64 == 0 || plaintext_str.size() == 64)) {
+        plaintext_bin = plaintext_str;
+    } else {
+        plaintext_bin = string_to_binary(plaintext_str);
+    }
+
+    plaintext_bin = pad_binary(plaintext_bin);
+
+    // Process in 64-bit blocks
+    vector<string> blocks;
+    for (size_t i = 0; i < plaintext_bin.size(); i += 64) {
+        blocks.push_back(plaintext_bin.substr(i, 64));
+    }
+
+    string result_bin = "";
+
+    if (mode == "des") {
+        KeyGenerator keygen(keys[0]);
+        keygen.generateRoundKeys();
+        vector<string> roundKeys = keygen.getRoundKeys();
+        DES des(roundKeys);
+
+        for (const string& block : blocks) {
+            if (operation == "encrypt") {
+                result_bin += des.encrypt(block);
+            } else if (operation == "decrypt") {
+                result_bin += des.decrypt(block);
+            } else {
+                cout << "Error: invalid operation" << endl;
+                return 1;
+            }
+        }
+
+    } else if (mode == "tripledes") {
+        KeyGenerator keygen1(keys[0]);
+        keygen1.generateRoundKeys();
+        vector<string> keys1 = keygen1.getRoundKeys();
+
+        KeyGenerator keygen2(keys[1]);
+        keygen2.generateRoundKeys();
+        vector<string> keys2 = keygen2.getRoundKeys();
+
+        KeyGenerator keygen3(keys[2]);
+        keygen3.generateRoundKeys();
+        vector<string> keys3 = keygen3.getRoundKeys();
+
+        TripleDES tdes(keys1, keys2, keys3);
+
+        for (const string& block : blocks) {
+            if (operation == "encrypt") {
+                result_bin += tdes.encrypt(block);
+            } else if (operation == "decrypt") {
+                result_bin += tdes.decrypt(block);
+            } else {
+                cout << "Error: invalid operation" << endl;
+                return 1;
+            }
+        }
+    }
+
+    // Output
+    if (plaintext_str.substr(0, 2) == "0x" || (plaintext_str.find_first_not_of("01") == string::npos && plaintext_str.size() == 64)) {
+        // Input was hex or binary, output hex
+        string result_hex = binary_to_hex(result_bin);
+        cout << "Result (hex): 0x" << result_hex << endl;
+    } else {
+        // Input was string, output string
+        string result_str = binary_to_string(result_bin);
+        if (operation == "decrypt") {
+            result_bin = unpad_binary(result_bin);
+            result_str = binary_to_string(result_bin);
+        }
+        cout << "Result: " << result_str << endl;
+    }
+
     return 0;
 }
 
